@@ -12,7 +12,7 @@ class MovieListViewModel(val fetchMovies: FetchMovies = FetchMovies()) :
         MovieListContract.State()
     ) {
 
-    public override fun handleEvent(event: MovieListContract.Event) {
+    public override suspend fun handleEvent(event: MovieListContract.Event) {
         when (event) {
             is MovieListContract.Event.ScreenStarted,
             is MovieListContract.Event.RefreshClicked -> {
@@ -20,7 +20,9 @@ class MovieListViewModel(val fetchMovies: FetchMovies = FetchMovies()) :
                 setState {
                     copy(isLoading = true)
                 }
-                setEffect(MovieListContract.Effect.ShowToast)
+                setEffect {
+                    MovieListContract.Effect.ShowToast
+                }
             }
 
             is MovieListContract.Event.MovieClicked -> {
@@ -46,7 +48,9 @@ class MovieListViewModel(val fetchMovies: FetchMovies = FetchMovies()) :
                 setState {
                     copy(isLoading = false, movies = updatedMovies)
                 }
-                setEffect(MovieListContract.Effect.FinishToast)
+                setEffect {
+                    MovieListContract.Effect.FinishToast
+                }
             }
         }
     }

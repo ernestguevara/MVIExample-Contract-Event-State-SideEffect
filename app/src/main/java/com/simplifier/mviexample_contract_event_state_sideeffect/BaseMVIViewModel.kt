@@ -6,6 +6,7 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 abstract class BaseMVIViewModel<State : MviState, Event : MviEvent, Effect : MviEffect>(
@@ -13,26 +14,28 @@ abstract class BaseMVIViewModel<State : MviState, Event : MviEvent, Effect : Mvi
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(initialState)
-    val state: StateFlow<State>
-        get() = _state
+    val state: StateFlow<State> = _state
 
     private val _effect = Channel<Effect>(Channel.BUFFERED)
     val effect = _effect.receiveAsFlow()
 
     fun setEvent(event: Event) {
-        handleEvent(event)
+        viewModelScope.launch {
+            handleEvent(event)
+        }
     }
 
-    protected abstract fun handleEvent(event: Event)
+    protected abstract suspend fun handleEvent(event: Event)
 
     protected fun setState(reducer: State.() -> State) {
-        val newState = reducer(_state.value)
-        _state.value = newState
+        _state.update { currentState ->
+            reducer(currentState)
+        }
     }
 
-    protected fun setEffect(effect: Effect) {
+    protected fun setEffect(sideEffect: () -> Effect) {
         viewModelScope.launch {
-            _effect.send(effect)
+            _effect.send(sideEffect())
         }
     }
 }
